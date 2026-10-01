@@ -945,7 +945,7 @@ td.wrap{white-space:normal;min-width:220px;max-width:360px}
 
 /* --- portretten --- */
 .av.ph{background:var(--selT);overflow:hidden;padding:0}
-.av.ph svg{width:100%;height:100%;display:block}
+.av.ph svg,.av.ph img{width:100%;height:100%;display:block;object-fit:cover}
 .av.sm{width:30px;height:30px;font-size:12px}
 .av.xl{width:64px;height:64px;font-size:22px;border-radius:20px}
 /* --- mobiele scanner --- */
@@ -1133,7 +1133,7 @@ button.m-row:hover{background:var(--hover)}
       <button class="iconbtn" type="button" id="bellBtn" aria-label="Meldingen bekijken" aria-haspopup="dialog"><svg class="ic"><use href="#i-bell"/></svg><span class="dot" id="bellDot"></span></button>
       <button class="userbtn" type="button" id="userBtn" aria-haspopup="menu"><span class="who"><b id="whoName"></b><span class="r" id="whoRole"></span></span><span class="av" id="whoAv"></span></button>
     </header>
-    <div class="rolebar"><span class="muted">Bekijk als</span><div class="seg" id="roles" role="radiogroup" aria-label="Rol kiezen"></div><span class="muted2 xs hide-m" style="margin-left:auto">Prototype · voorbeelddata, geen echte personen</span></div>
+    <div class="rolebar"><span class="muted">Bekijk als</span><div class="seg" id="roles" role="radiogroup" aria-label="Rol kiezen"></div><span class="muted2 xs hide-m" style="margin-left:auto">Prototype · voorbeelddata, geen echte personen · foto’s zijn AI-gegenereerd</span></div>
     <main class="content" id="view" tabindex="-1"></main>
   </div>
 </div>
@@ -1714,9 +1714,9 @@ const MSEL={};
 function msChips(key){ const {o}=MSEL[key]; const v=[...get(key)]; if(!v.length) return `<span class="ms-ph">${esc(o.ph||"Kies…")}</span>`;
   const shown=v.slice(0,o.max||4); return shown.map(x=>`<span class="ms-chip">${o.flag?`<span class="fl" aria-hidden="true">${o.flag(x)}</span>`:""}${esc(x)}</span>`).join("")+(v.length>shown.length?`<span class="ms-chip more">+${v.length-shown.length}</span>`:""); }
 function MSel(key, options, o={}){ MSEL[key]={options,o};
-  return `<button type="button" class="msel" data-msel="${key}" data-fid="msel:${key}" aria-haspopup="listbox" aria-expanded="false" ${o.label?`aria-label="${esc(o.label)}"`:""}><span class="ms-v">${msChips(key)}</span>${ic("chev","s")}</button>`; }
+  return `<button type="button" class="msel" data-multi="${key}" data-fid="msel:${key}" aria-haspopup="listbox" aria-expanded="false" ${o.label?`aria-label="${esc(o.label)}"`:""}><span class="ms-v">${msChips(key)}</span>${ic("chev","s")}</button>`; }
 function openMulti(anchor){
-  const key=anchor.dataset.msel; const {options,o}=MSEL[key]; const val=()=>get(key);
+  const key=anchor.dataset.multi; const {options,o}=MSEL[key]; const val=()=>get(key);
   const draw=(q="")=>{ const list=options.filter(x=>!q||x.t.toLowerCase().includes(q.toLowerCase()));
     if(!list.length) return `<div class="none">Niets gevonden voor “${esc(q)}”</div>`;
     const sel=q?[]:options.filter(x=>val().has(x.v)); let g=null;
@@ -1755,6 +1755,7 @@ const SCARF_NAT=["Syrisch","Afghaans","Jemenitisch","Somalisch","Soedanees","Mar
 function _rng(str){ let h=1779033703^str.length; for(let i=0;i<str.length;i++){ h=Math.imul(h^str.charCodeAt(i),3432918353); h=h<<13|h>>>19; } return ()=>{ h=Math.imul(h^h>>>16,2246822507); h=Math.imul(h^h>>>13,3266489909); h^=h>>>16; return (h>>>0)/4294967296; }; }
 function _shade(hex,f){ const n=parseInt(hex.slice(1),16); const c=[n>>16,n>>8&255,n&255].map(v=>Math.max(0,Math.min(255,Math.round(f<0?v*(1+f):v+(255-v)*f)))); return "#"+c.map(v=>v.toString(16).padStart(2,"0")).join(""); }
 function portrait(b){
+  if(typeof FOTO!=="undefined"&&FOTO[b.id]) return `<img src="data:image/jpeg;base64,${FOTO[b.id]}" alt="" loading="lazy" decoding="async">`;
   if(PORTRAIT_CACHE.has(b.id)) return PORTRAIT_CACHE.get(b.id);
   const r=_rng(b.id+"·"+b.naam), p=a=>a[Math.floor(r()*a.length)];
   const a=b.geb?age(b.geb):30, f=b.geslacht==="V", kid=a<13, teen=a>=13&&a<18, old=a>=62;
@@ -1808,7 +1809,7 @@ function portrait(b){
   const svg=`<svg viewBox="7 5 50 50" aria-hidden="true" focusable="false">${s.join("")}</svg>`;
   PORTRAIT_CACHE.set(b.id,svg); return svg;
 }
-const resAv = (b,c="") => b?`<span class="av ph ${c}" role="img" aria-label="Portret ${esc(b.naam)}">${portrait(b)}</span>`:"";
+const resAv = (b,c="") => b?`<span class="av ph ${c}" role="img" aria-label="Foto ${esc(b.naam)} (AI-gegenereerd)">${portrait(b)}</span>`:"";
 
 const whoChip = v => !v ? `<span class="asg team"><span class="av">${ic("users","s")}</span>Hele team</span>` : v.k==="t" ? `<span class="asg team"><span class="av">${ic(TEAMS[v.v].i,"s")}</span>Team ${TEAMS[v.v].n}</span>` : `<span class="asg"><span class="av">${ini(M(v.v)?.naam||"?")}</span>${M(v.v)?.naam||"?"}</span>`;
 const dueChip = e => { if(e.status==="klaar") return pill("p-ok",`Afgerond ${fd(e.gereed||e.date)}`); if(!e.due) return pill("p-n nodot","Doorlopend"); const d=dayDiff(e.due,TODAY); return d<0?pill("p-err",`Te laat · ${-d} dag${d<-1?"en":""}`):d===0?pill("p-warn","Vandaag"):d===1?pill("p-n","Morgen"):pill("p-n",fdateLong(e.due)); };
@@ -2392,7 +2393,7 @@ function go(v){ closePop(false); S.layer=null; S.view=v; try{history.replaceStat
 document.addEventListener("pointerdown",e=>{ if(POP&&!POP.el.contains(e.target)&&!POP.anchor?.contains(e.target)&&!e.target.closest(".palette")) closePop(false); },true);
 document.addEventListener("click",e=>{ const T0=s=>e.target.closest(s); const deep=T0("[data-goto]"); const T=s=>{ const x=T0(s); return deep&&x&&s==="[data-layer]"&&x.contains(deep)&&x!==deep?null:x; }; let el;
   if(T("[data-closelayer]")){ closeLayer(); return; }
-  if(el=T("[data-msel]")){ if(POP?.anchor===el){ closePop(); return; } openMulti(el); return; }
+  if(el=T("[data-multi]")){ if(POP?.anchor===el){ closePop(); return; } openMulti(el); return; }
   if(el=T("[data-sel]")){ if(POP?.anchor===el){ closePop(); return; } openSelect(el); return; }
   if(el=T("[data-date]")){ if(POP?.anchor===el){ closePop(); return; } openDate(el); return; }
   if(el=T("[data-menu]")){ e.stopPropagation(); if(POP?.anchor===el){ closePop(); return; } openMenu(el,el.dataset.menu,el.dataset.arg); return; }
